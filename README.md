@@ -16,12 +16,6 @@ Scan the QR code in the Console pane using the iOS camera or Expo GO app to load
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/create-pages/).
 
-When you're ready, run the following in the Shell pane:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+The code in the **app-example** directory gives you an example of using tabs and the included components. Using these components is optional.
