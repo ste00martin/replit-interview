@@ -51,11 +51,11 @@ export interface EvalResponseBody {
   };
 }
 
-export interface EvalResponseBodyLocal extends EvalResponseBody {
+export interface EvalResponseBodyServer extends EvalResponseBody {
   sender: 'repl-server'
 }
 
-export type FlatListItem = ItemType | EvalResponseBodyLocal
+export type FlatListItem = ItemType | EvalResponseBodyServer
 
 export function BackendProvider(props: React.PropsWithChildren) {
   const [serverUrl, _setServerUrl] = useState('')
@@ -79,7 +79,6 @@ export function BackendProvider(props: React.PropsWithChildren) {
           sender: 'repl-local',
         },
       ]);
-      setSessionId('')
     } else {
       setMessages(prevMessages => [
         {
@@ -92,7 +91,6 @@ export function BackendProvider(props: React.PropsWithChildren) {
       setSessionId(UUID)
     }
   }, [isConnected])
-
 
   const evaluate = async (code: string) => {
     try {
@@ -110,7 +108,6 @@ export function BackendProvider(props: React.PropsWithChildren) {
         },
       ]);
 
-
       const body = {
         code,
         sessionId,
@@ -118,15 +115,17 @@ export function BackendProvider(props: React.PropsWithChildren) {
       console.log('body is', body)
       const response =  await fetch(`${serverUrl}/eval`, {
         method: "POST",
+        cache: 'no-cache',
         body: JSON.stringify(body),
         headers: {
           "Content-type": "application/json"
         }
       });
-      console.log('response is ', response)
-      console.log('response status', response.status)
+
+      console.log('response', response)
+
       if (response.status !== 200) {
-        Alert.alert('server error!', `HTTP error! status: ${response.status}`)
+        throw new Error(`server responded with http ${response.status} code`)
       }
       const data: EvalResponseBody = await response.json();
       console.log('response back is')
@@ -142,44 +141,23 @@ export function BackendProvider(props: React.PropsWithChildren) {
       ]);
 
     } catch (error) {
+      console.log('server url used', serverUrl)
+      console.log('sessionid used', sessionId)
+      const errorMessageAsString = String(error);
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          id: Date.now().toString(),
+          text: errorMessageAsString,
+          sender: 'repl-local',
+        },
+      ]);
       setServerUrl('')
-      console.warn('backend error:', error);
+      setSessionId(undefined)
+
+      console.log('backend error:', error);
     }
   }
-
-  // const sendMessage = () => {
-  //   if(!isConnected) {
-  //     attemptBackendConnect(newMessage.trim())
-  //     return
-  //   }
-
-  //   if (newMessage.trim()) {
-  //     const newMessageToSend = newMessage.trim();
-  //     setMessages(prevMessages => [
-  //       ...prevMessages,
-  //       {
-  //         id: Date.now().toString(),
-  //         text: newMessageToSend,
-  //         sender: 'user',
-  //       },
-  //     ]);
-  //     setNewMessage('');
-  //     evaluate(newMessageToSend)
-
-  //     // Simulate received message
-  //     setTimeout(() => {
-  //       setMessages(prevMessages => [
-  //         ...prevMessages,
-  //         {
-  //           id: Date.now().toString(),
-  //           text: 'Thanks for your message!',
-  //           sender: 'repl',
-  //         },
-  //       ]);
-  //     }, 1000);
-  //   }
-  // };
-
 
   const setServerUrl = (newUrl: string) => {
     // remove all spaces from newUrlString

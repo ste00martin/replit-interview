@@ -10,7 +10,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import SearchBar from '../components/InputBar';
-import { FlatListItem, useBackend, EvalResponseBodyLocal } from '../context/Backend';
+import { FlatListItem, useBackend, EvalResponseBodyServer } from '../context/Backend';
+import SerializedDisplay from '../components/SerializedDisplay';
 
 const MainRepl = () => {
 
@@ -18,9 +19,7 @@ const MainRepl = () => {
 
   const [newMessage, setNewMessage] = useState('');
 
-  // get top inset
-  const { top } = useSafeAreaInsets()
-
+  const { top, bottom } = useSafeAreaInsets()
 
   const sendMessage = () => {
     const newMessageToSend = newMessage.trim();
@@ -28,35 +27,15 @@ const MainRepl = () => {
     if (newMessageToSend) {
       evaluate(newMessageToSend)
       setNewMessage('');
-
-      // // Simulate received message
-      // setTimeout(() => {
-      //   setMessages(prevMessages => [
-      //     ...prevMessages,
-      //     {
-      //       id: Date.now().toString(),
-      //       text: 'Thanks for your message!',
-      //       sender: 'other',
-      //     },
-      //   ]);
-      // }, 1000);
     }
   };
-  function isServerResponse(item: FlatListItem): item is EvalResponseBodyLocal {
-    return (item as EvalResponseBodyLocal).sender === 'repl-server';
+  function isServerResponse(item: FlatListItem): item is EvalResponseBodyServer {
+    return (item as EvalResponseBodyServer).sender === 'repl-server';
   }
 
   const renderMessage = ({ item }: { item: FlatListItem}) => {
     if(isServerResponse(item)) {
-      return (
-        <View
-          style={[
-            styles.replMessage,
-          ]}
-        >
-          <Text style={styles.messageText}>{JSON.stringify(item.serialized)}</Text>
-        </View>
-      )
+      return <SerializedDisplay response={item} />
     }
 
     return (
@@ -71,7 +50,7 @@ const MainRepl = () => {
         <Text style={styles.messageText}>{item.text}</Text>
       </View>
     )
-};
+  };
 
   return (
     <KeyboardAvoidingView
@@ -83,6 +62,9 @@ const MainRepl = () => {
         renderItem={renderMessage}
         ListHeaderComponent={()=> {
           return <View style={{height: top}}></View>
+        }}
+        ListFooterComponent={()=> {
+          return <View style={{height: bottom+40}}></View>
         }}
         keyExtractor={item => {
           if(isServerResponse(item)) {

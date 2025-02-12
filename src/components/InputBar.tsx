@@ -72,9 +72,10 @@ const InputBar = ({ sendMessage, newMessage, setNewMessage}: {
       <View style={styles.inputContainerTop}>
       <TextInput
         style={styles.input}
+        autoCapitalize='none'
         value={newMessage}
         onChangeText={setNewMessage}
-        placeholder="Type a message..."
+        placeholder="type javascript here"
         placeholderTextColor="#666"
         multiline
       />
