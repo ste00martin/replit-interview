@@ -6,7 +6,7 @@ const BackendContext = React.createContext<{
   isConnected: boolean | null
   evaluate: (code: string) => void
   setServerUrl: (code: string) => void
-  messages: ItemType[]
+  messages: FlatListItem[]
 }>({
   isConnected: null,
   evaluate: ()=> { },
@@ -26,7 +26,7 @@ export function useBackend() {
   return value
 }
 
-export type SenderType = 'repl' | 'user'
+export type SenderType = 'repl-local' | 'user' | 'repl-server'
 
 export type ItemType = {
   id: string;
@@ -34,14 +34,37 @@ export type ItemType = {
   sender: SenderType
 }
 
+// from backend
+export type SerializedType =
+  | { type: 'object'; value: Array<{ key: string; value: string }> }
+  | { type: 'array'; value: string[] }
+  | { type: 'error'; value: { name: string; message: string; stack: string } }
+  | { type: 'undefined'; value: string }
+  | { type: 'string'; value: string }
+  | { type: 'number'; value: number }
+  | { type: 'boolean'; value: boolean };
+
+export interface EvalResponseBody {
+  root: string;
+  serialized: {
+    [key: string]: SerializedType;
+  };
+}
+
+export interface EvalResponseBodyLocal extends EvalResponseBody {
+  sender: 'repl-server'
+}
+
+export type FlatListItem = ItemType | EvalResponseBodyLocal
+
 export function BackendProvider(props: React.PropsWithChildren) {
   const [serverUrl, _setServerUrl] = useState('')
   const [sessionId, setSessionId] = useState<string|undefined>(undefined)
 
   const isConnected = !!serverUrl
 
-  const [messages, setMessages] = useState<ItemType[]>([
-    { id: '1', text: 'Welcome!', sender: 'repl' },
+  const [messages, setMessages] = useState<FlatListItem[]>([
+    { id: '1', text: 'Welcome!', sender: 'repl-local' },
     // { id: '2', text: 'Hi there!', sender: 'user' },
   ]);
 
@@ -53,19 +76,20 @@ export function BackendProvider(props: React.PropsWithChildren) {
         {
           id: Date.now().toString(),
           text: 'please provide a url to connect to a server',
-          sender: 'repl',
+          sender: 'repl-local',
         },
       ]);
       setSessionId('')
     } else {
       setMessages(prevMessages => [
-        ...prevMessages,
         {
           id: Date.now().toString(),
           text: 'ready to repl!',
-          sender: 'repl',
+          sender: 'repl-local',
         },
       ]);
+      const UUID = Crypto.randomUUID();
+      setSessionId(UUID)
     }
   }, [isConnected])
 
@@ -76,6 +100,15 @@ export function BackendProvider(props: React.PropsWithChildren) {
         setServerUrl(code)
         return;
       }
+
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          id: Date.now().toString(),
+          text: code,
+          sender: 'user',
+        },
+      ]);
 
 
       const body = {
@@ -91,13 +124,23 @@ export function BackendProvider(props: React.PropsWithChildren) {
         }
       });
       console.log('response is ', response)
-
-      if (!response.ok) {
+      console.log('response status', response.status)
+      if (response.status !== 200) {
         Alert.alert('server error!', `HTTP error! status: ${response.status}`)
       }
-      const data = await response.json();
+      const data: EvalResponseBody = await response.json();
       console.log('response back is')
       console.log(data);
+      console.log('EvalResponseBody is data')
+
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          ...data,
+          sender: 'repl-server',
+        },
+      ]);
+
     } catch (error) {
       setServerUrl('')
       console.warn('backend error:', error);
@@ -143,9 +186,6 @@ export function BackendProvider(props: React.PropsWithChildren) {
     const removedSpaces = newUrl.replaceAll(' ', '')
     _setServerUrl(removedSpaces)
 
-    // setTimeout(() => {
-    //   evaluate('1+1')
-    // }, 3000);
   }
 
   return (

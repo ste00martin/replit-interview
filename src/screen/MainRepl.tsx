@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import SearchBar from '../components/InputBar';
-import { ItemType, useBackend } from '../context/Backend';
+import { FlatListItem, useBackend, EvalResponseBodyLocal } from '../context/Backend';
 
 const MainRepl = () => {
 
@@ -42,19 +42,36 @@ const MainRepl = () => {
       // }, 1000);
     }
   };
+  function isServerResponse(item: FlatListItem): item is EvalResponseBodyLocal {
+    return (item as EvalResponseBodyLocal).sender === 'repl-server';
+  }
 
-  const renderMessage = ({ item }: { item: ItemType}) => (
-    <View
-      style={[
-        styles.messageBubble,
-        item.sender === 'user'
-          ? styles.userMessage
-          : styles.replMessage,
-      ]}
-    >
-      <Text style={styles.messageText}>{item.text}</Text>
-    </View>
-  );
+  const renderMessage = ({ item }: { item: FlatListItem}) => {
+    if(isServerResponse(item)) {
+      return (
+        <View
+          style={[
+            styles.replMessage,
+          ]}
+        >
+          <Text style={styles.messageText}>{JSON.stringify(item.serialized)}</Text>
+        </View>
+      )
+    }
+
+    return (
+      <View
+        style={[
+          styles.messageBubble,
+          item.sender === 'user'
+            ? styles.userMessage
+            : styles.replMessage,
+        ]}
+      >
+        <Text style={styles.messageText}>{item.text}</Text>
+      </View>
+    )
+};
 
   return (
     <KeyboardAvoidingView
@@ -67,7 +84,12 @@ const MainRepl = () => {
         ListHeaderComponent={()=> {
           return <View style={{height: top}}></View>
         }}
-        keyExtractor={item => item.id}
+        keyExtractor={item => {
+          if(isServerResponse(item)) {
+            return item.root
+          }
+          return item.id
+        }}
         style={styles.messageList}
         inverted={false}
       />

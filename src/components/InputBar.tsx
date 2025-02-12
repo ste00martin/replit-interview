@@ -27,7 +27,6 @@ const InputBar = ({ sendMessage, newMessage, setNewMessage}: {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(()=> {
-    console.log('isKeyboardVisible',isKeyboardVisible )
     if(isKeyboardVisible) {
       Animated.timing(bottomPadAnimation, {
         toValue: scaleOpen,
@@ -42,7 +41,6 @@ const InputBar = ({ sendMessage, newMessage, setNewMessage}: {
       }).start()
     }
   }, [isKeyboardVisible])
-  console.log('bottomPadAnimation',bottomPadAnimation )
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
