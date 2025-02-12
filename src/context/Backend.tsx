@@ -3,14 +3,10 @@ import { Alert } from 'react-native'
 import * as Crypto from 'expo-crypto';
 
 const BackendContext = React.createContext<{
-  isConnected: boolean | null
   evaluate: (code: string) => void
-  setServerUrl: (code: string) => void
   messages: FlatListItem[]
 }>({
-  isConnected: null,
   evaluate: ()=> { },
-  setServerUrl: ()=> { },
   messages: [],
 })
 
@@ -58,14 +54,13 @@ export interface EvalResponseBodyServer extends EvalResponseBody {
 export type FlatListItem = ItemType | EvalResponseBodyServer
 
 export function BackendProvider(props: React.PropsWithChildren) {
-  const [serverUrl, _setServerUrl] = useState('')
+  const [serverUrl, setServerUrl] = useState('https://be9904a4-aced-4e4e-bea5-09e7b17b27a3-00-2pfvb1reqsovd.spock.replit.dev')
   const [sessionId, setSessionId] = useState<string|undefined>(undefined)
 
   const isConnected = !!serverUrl
 
   const [messages, setMessages] = useState<FlatListItem[]>([
     { id: '1', text: 'Welcome!', sender: 'repl-local' },
-    // { id: '2', text: 'Hi there!', sender: 'user' },
   ]);
 
   useEffect(()=> {
@@ -94,7 +89,7 @@ export function BackendProvider(props: React.PropsWithChildren) {
 
   const evaluate = async (code: string) => {
     try {
-      if(!isConnected) {
+      if(!serverUrl) {
         setServerUrl(code)
         return;
       }
@@ -159,19 +154,10 @@ export function BackendProvider(props: React.PropsWithChildren) {
     }
   }
 
-  const setServerUrl = (newUrl: string) => {
-    // remove all spaces from newUrlString
-    const removedSpaces = newUrl.replaceAll(' ', '')
-    _setServerUrl(removedSpaces)
-
-  }
-
   return (
     <BackendContext.Provider
       value={{
-        isConnected,
         evaluate,
-        setServerUrl,
         messages,
       }}
     >

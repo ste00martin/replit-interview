@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { EvalResponseBody, SerializedType } from '../context/Backend';
-
 
 const CollapsibleItem = ({ label, children }: { label: string; children: React.ReactNode }) => {
   const [collapsed, setCollapsed] = useState(true);
@@ -27,20 +26,24 @@ const RenderItem = ({ data, path, seenPaths }: { data: SerializedType; path: str
   switch (data.type) {
     case 'object':
       return (
-        <CollapsibleItem label="Object">
-          {data.value.map(({ value }, index) => (
-            <RenderItem key={index} data={value} path={`${path}.${index}`} seenPaths={seenPaths} />
-          ))}
-        </CollapsibleItem>
+        <>
+          {data.value.map((key, index) => {
+            console.log('value is', key)
+
+            return (
+              <RenderItem key={index} data={key.value} path={`${path}.${index}`} seenPaths={seenPaths} />
+            )
+          })}
+        </>
       );
 
     case 'array':
       return (
-        <CollapsibleItem label="Array">
+        <>
           {data.value.map((value, index) => (
             <RenderItem key={index} data={{ type: typeof value, value }} path={`${path}.${index}`} seenPaths={seenPaths} />
           ))}
-        </CollapsibleItem>
+        </>
       );
 
     case 'error':
