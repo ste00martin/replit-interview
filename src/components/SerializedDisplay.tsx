@@ -1,62 +1,68 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { EvalResponseBody, SerializedType } from '../context/Backend';
 
-const CollapsibleItem = ({ label, children }: { label: string; children: React.ReactNode }) => {
-  const [collapsed, setCollapsed] = useState(true);
-
-  return (
-    <View style={styles.collapsibleContainer}>
-      <Pressable onPress={() => setCollapsed(!collapsed)} style={styles.header}>
-        <Text style={styles.label}>{collapsed ? '▶ ' : '▼ '} {label}</Text>
-      </Pressable>
-      {!collapsed && <View style={styles.content}>{children}</View>}
-    </View>
-  );
-};
-
-const RenderItem = ({ data, path, seenPaths }: { data: SerializedType; path: string; seenPaths: Set<string> }) => {
-  if (typeof data.value === 'object' && data.value !== null) {
+const RenderItem = ({ key, data, path, seenPaths, serialized }: { data: SerializedType; path: string; key: string; seenPaths: Set<string>;
+  serialized: {
+  [key: string]: SerializedType;
+}}) => {
+  // if (typeof data.value === 'object' && data.value !== null) {
     if (seenPaths.has(path)) {
       return <Text style={styles.circularReference}>[Circular Reference]</Text>;
     }
-    seenPaths.add(path);
-  }
+    seenPaths.add(key);
+  // }
 
   switch (data.type) {
     case 'object':
+      let opening = '{'
+      let closing = '}'
+
       return (
         <>
+          <Text style={styles.label}>{opening}</Text>
+          <View style={{paddingLeft: 30 }}>
+
           {data.value.map((key, index) => {
             console.log('value is', key)
-
+            serialized[key.key]
             return (
-              <RenderItem key={index} data={key.value} path={`${path}.${index}`} seenPaths={seenPaths} />
+              <RenderItem key={key.key} data={serialized[key.key]} path={`${path}.${index}`} seenPaths={seenPaths} serialized={serialized}/>
             )
           })}
+          </View>
+          <Text style={styles.label}>{closing}</Text>
+
         </>
       );
 
     case 'array':
+      let openBraket = '['
+      let closedBraket = ']'
       return (
         <>
+        <Text style={styles.label}>{openBraket}</Text>
+        <View style={{paddingLeft: 30 }}>
           {data.value.map((value, index) => (
-            <RenderItem key={index} data={{ type: typeof value, value }} path={`${path}.${index}`} seenPaths={seenPaths} />
+            <RenderItem key={value} data={serialized[value]} path={`${path}.${index}`} seenPaths={seenPaths} serialized={serialized}/>
           ))}
+        </View>
+        <Text style={styles.label}>{closedBraket}</Text>
         </>
       );
 
     case 'error':
       return (
-        <CollapsibleItem label="Error">
+        <>
           <Text style={styles.errorText}>{data.value.name}: {data.value.message}</Text>
-        </CollapsibleItem>
+        </>
       );
 
     case 'undefined':
     case 'string':
     case 'number':
     case 'boolean':
+      console.log('')
       return (
         <View style={styles.item}>
           <Text style={styles.value}>{String(data.value)}</Text>
@@ -74,7 +80,7 @@ const SerializedDisplay = ({ response }: { response: EvalResponseBody }) => {
   return (
     <>
       {Object.entries(response.serialized).map(([key, value]) => (
-        <RenderItem key={key} data={value} path={key} seenPaths={seenPaths} />
+        <RenderItem key={key} data={value} path={key} seenPaths={seenPaths} serialized={response.serialized}/>
       ))}
     </>
   );
@@ -106,8 +112,6 @@ const styles = StyleSheet.create({
   },
   item: {
     padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
   },
   value: {
     fontSize: 14,
